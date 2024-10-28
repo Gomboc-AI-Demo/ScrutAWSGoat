@@ -27,6 +27,9 @@ resource "aws_lambda_function" "react_lambda_app" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.blog_app_lambda.arn
   depends_on    = [data.archive_file.lambda_zip, null_resource.file_replacement_lambda_react]
+  tracing_config {
+    mode = "Active"
+  }
 }
 
 
@@ -3094,6 +3097,9 @@ resource "aws_lambda_function" "lambda_ba_data" {
       JWT_SECRET = "T2BYL6#]zc>Byuzu"
     }
   }
+  tracing_config {
+    mode = "Active"
+  }
 }
 
 
@@ -3219,8 +3225,8 @@ resource "aws_s3_bucket_ownership_controls" "bucket_upload" {
 
 resource "aws_s3_bucket_acl" "bucket_upload" {
   depends_on = [
-	aws_s3_bucket_public_access_block.bucket_upload,
-	aws_s3_bucket_ownership_controls.bucket_upload,
+    aws_s3_bucket_public_access_block.bucket_upload,
+    aws_s3_bucket_ownership_controls.bucket_upload,
   ]
 
   bucket = aws_s3_bucket.bucket_upload.id
@@ -3303,8 +3309,8 @@ resource "aws_s3_bucket_ownership_controls" "dev" {
 
 resource "aws_s3_bucket_acl" "dev" {
   depends_on = [
-	aws_s3_bucket_public_access_block.dev,
-	aws_s3_bucket_ownership_controls.dev,
+    aws_s3_bucket_public_access_block.dev,
+    aws_s3_bucket_ownership_controls.dev,
   ]
 
   bucket = aws_s3_bucket.dev.id
@@ -3380,8 +3386,8 @@ resource "aws_s3_bucket_ownership_controls" "bucket_temp" {
 
 resource "aws_s3_bucket_acl" "bucket_temp" {
   depends_on = [
-	aws_s3_bucket_public_access_block.bucket_temp,
-	aws_s3_bucket_ownership_controls.bucket_temp,
+    aws_s3_bucket_public_access_block.bucket_temp,
+    aws_s3_bucket_ownership_controls.bucket_temp,
   ]
 
   bucket = aws_s3_bucket.bucket_temp.id
@@ -3602,12 +3608,13 @@ resource "aws_instance" "goat_instance" {
   depends_on = [
     aws_s3_bucket_object.upload_temp_object_2
   ]
+  monitoring = true
 }
 
 
 resource "aws_dynamodb_table" "users_table" {
   name           = "blog-users"
-  billing_mode   = "PROVISIONED"
+  billing_mode   = "PAY_PER_REQUEST"
   read_capacity  = 2
   write_capacity = 2
 
@@ -3616,10 +3623,13 @@ resource "aws_dynamodb_table" "users_table" {
     name = "email"
     type = "S"
   }
+  server_side_encryption {
+    enabled = true
+  }
 }
 resource "aws_dynamodb_table" "posts_table" {
   name           = "blog-posts"
-  billing_mode   = "PROVISIONED"
+  billing_mode   = "PAY_PER_REQUEST"
   read_capacity  = 2
   write_capacity = 2
 
@@ -3627,6 +3637,9 @@ resource "aws_dynamodb_table" "posts_table" {
   attribute {
     name = "id"
     type = "S"
+  }
+  server_side_encryption {
+    enabled = true
   }
 }
 
@@ -3708,4 +3721,3 @@ EOF
 output "app_url" {
   value = "${aws_api_gateway_stage.api.invoke_url}/react"
 }
-
